@@ -66,12 +66,10 @@
 </script>
 
 <script>
-    $(document).ready(function() {
-        // Apply Select2 to the attribute select dropdown
-        $('#attribute_ids').select2({
-            placeholder: "Select attributes",
-            allowClear: true
-        });
+    // Apply Select2 to the attribute select dropdown
+    $('#attribute_ids').select2({
+        placeholder: "Select attributes",
+        allowClear: true
     });
 </script>
 

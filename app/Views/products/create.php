@@ -73,26 +73,25 @@
 </div>
 
 <script>
-    $(document).ready(function() {
-        $('#category_id').change(function() {
-            const categoryId = $(this).val();
+    $('#category_id').change(function() {
+        const categoryId = $(this).val();
 
-            // Clear previous attributes inputs
-            $("#attributeInputs").empty();
+        // Clear previous attributes inputs
+        $("#attributeInputs").empty();
 
-            // If a category is selected
-            if (categoryId !== false) {
-                $.ajax({
-                    url: '<?= site_url('product/getAttributes') ?>/' + categoryId,
-                    method: 'GET',
-                    success: function(data) {
+        // If a category is selected
+        if (categoryId !== false) {
+            $.ajax({
+                url: '<?= site_url('product/getAttributes') ?>/' + categoryId,
+                method: 'GET',
+                success: function(data) {
 
-                        const attributes = data;
+                    const attributes = data;
 
-                        // Generate input fields for each attributes
+                    // Generate input fields for each attributes
 
-                        attributes.forEach(function(attribute) {
-                            $('#attributeInputs').append(`
+                    attributes.forEach(function(attribute) {
+                        $('#attributeInputs').append(`
                             <div class="mb-3">
                                 <label for="${attribute.attribute_id}" class="form-group">${attribute.name}</label>
                                 <input 
@@ -103,11 +102,10 @@
                                     placeholder="Enter ${attribute.name}">
                             </div>
                         `);
-                        });
-                    }
-                });
-            }
-        });
+                    });
+                }
+            });
+        }
     });
 </script>
 

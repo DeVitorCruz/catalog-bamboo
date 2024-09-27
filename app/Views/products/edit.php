@@ -83,27 +83,25 @@
 </div>
 
 <script>
-    $(document).ready(function() {
-        // Trigger when the category is changed
-        $('#category_id').change(function() {
-            const categoryId = $(this).val();
+    $('#category_id').change(function() {
+        const categoryId = $(this).val();
 
-            // Clear previous attributes inputs
-            $("#attributeInputs").empty();
+        // Clear previous attributes inputs
+        $("#attributeInputs").empty();
 
-            // Send AJAX request to get the attributes for the selected category
+        // Send AJAX request to get the attributes for the selected category
 
-            $.ajax({
-                url: '<?= site_url('product/getAttributes') ?>/' + categoryId,
-                method: 'GET',
-                success: function(data) {
+        $.ajax({
+            url: '<?= site_url('product/getAttributes') ?>/' + categoryId,
+            method: 'GET',
+            success: function(data) {
 
-                    const attributes = data;
+                const attributes = data;
 
-                    // Generate input fields for each attributes
+                // Generate input fields for each attributes
 
-                    attributes.forEach(function(attribute) {
-                        $('#attributeInputs').append(`
+                attributes.forEach(function(attribute) {
+                    $('#attributeInputs').append(`
                             <div class="mb-3">
                                 <label for="${attribute.attribute_id}" class="form-group">${attribute.name}</label>
                                 <input 
@@ -116,12 +114,11 @@
                                 <input type="hidden" name="attribute_values[${attribute.attribute_id}][attribute_id]" value="${attribute.attribute_id}">
                             </div>
                         `);
-                    });
-                },
-                error: function(xhr, status, error) {
-                    console.error('Error retrieving attributes: ' + error);
-                }
-            });
+                });
+            },
+            error: function(xhr, status, error) {
+                console.error('Error retrieving attributes: ' + error);
+            }
         });
     });
 </script>

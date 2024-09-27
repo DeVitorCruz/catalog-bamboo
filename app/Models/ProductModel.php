@@ -64,4 +64,56 @@ class ProductModel extends Model
         // Return as JSON
         return $this->response->setJSON($attributes);
     }
+
+    // Main method to apply all filters
+
+    public function filterProducts($categories = null, $minPrice = null, $maxPrice = null, $attributes = [])
+    {
+        $builder = $this->db->table('products')
+            ->select('products.*');
+
+        // Apply individual filters
+
+        $builder = $this->applyCategoryFilter($builder, $categories);
+        $builder = $this->applyPriceFilter($builder, $minPrice, $maxPrice);
+        $builder = $this->applyAttributeFilter($builder, $attributes);
+
+        // Exacute the query and return the results
+        return $builder->get()->getResultArray();
+    }
+
+    // Filter products by category
+
+    private function applyCategoryFilter($builder, $categories)
+    {
+        // Filter by category
+        if (!empty($categories)) {
+            $builder->join('product_categories', 'product_categories.product_id = products.product_id');
+            $builder->whereIn('product_categories.category_id', $categories);
+        }
+
+        return $builder;
+    }
+
+    // Filter products by price range
+    private function applyPriceFilter($builder, $min_price, $max_price)
+    {
+        if ($min_price !== null) {
+            $builder->where('products.price >=', $min_price);
+        }
+        if ($max_price !== null) {
+            $builder->where('products.price <=', $max_price);
+        }
+        return $builder;
+    }
+
+    // Filter products by attributes
+    private function applyAttributeFilter($builder, $attributes)
+    {
+        if (!empty($attributes)) {
+            $builder->join('product_attributes', 'product_attributes.product_id = products.product_id');
+            $builder->whereIn('product_attributes.attribute_id', $attributes);
+        }
+        return $builder;
+    }
 }

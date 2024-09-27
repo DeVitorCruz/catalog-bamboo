@@ -21,6 +21,8 @@ $routes->post('product/delete/(:num)', 'ProductController::delete/$1'); // Handl
 
 $routes->get('product/getAttributes/(:num)', 'ProductController::getAttributesByCategory/$1');
 
+$routes->post('product/filter', 'ProductController::filterProducts');
+
 $routes->get('product/getProductDetails/(:num)', 'ProductController::getProductDetails/$1');
 
 $routes->get('settings/description', 'SettingsController::description');

@@ -56,13 +56,25 @@ class ProductController extends BaseController
 
     public function list()
     {
-        $data['products'] = $this->productModel->getProducts(); // Fetch all products
+
+        $categories = $this->categoryModel->getCategories();
+        $attributes = $this->attributeModel->getAttributes();
+        $product = $this->productModel->getProducts();
+
+        $data = [
+            'products' => $product,
+            'categories' => $categories,
+            'attributes' => $attributes
+        ];
+
+        // Fetch all products
 
         return view('products/list', $data); // Load the view to display
     }
 
     public function create()
     {
+
         $data['categories'] = $this->categoryModel->findAll();
 
         return view('products/create', $data); // Load the product form view
@@ -280,5 +292,20 @@ class ProductController extends BaseController
             'category' => $category,
             'attributes' => $attributes
         ]);
+    }
+
+    public function filterProducts()
+    {
+        $categories = $this->request->getPost('categories');
+        $attributes = $this->request->getPost('attributes');
+        $minPrice = $this->request->getPost('minPrice');
+        $maxPrice = $this->request->getPost('maxPrice');
+
+        // Pass the filters to the ProductModel
+        $products = $this->productModel->filterProducts($categories, $minPrice, $maxPrice, $attributes);
+
+        // Return the results as JSON
+
+        return $this->response->setJSON($products);
     }
 }
