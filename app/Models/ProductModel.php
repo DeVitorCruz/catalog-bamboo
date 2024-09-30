@@ -96,14 +96,15 @@ class ProductModel extends Model
     }
 
     // Filter products by price range
-    private function applyPriceFilter($builder, $min_price, $max_price)
+    private function applyPriceFilter($builder, $minPrice, $maxPrice)
     {
-        if ($min_price !== null) {
-            $builder->where('products.price >=', $min_price);
+        if ($minPrice) {
+            $builder->where('products.price >=', $minPrice);
         }
-        if ($max_price !== null) {
-            $builder->where('products.price <=', $max_price);
+        if ($maxPrice) {
+            $builder->where('products.price <=', $maxPrice);
         }
+
         return $builder;
     }
 
@@ -114,6 +115,16 @@ class ProductModel extends Model
             $builder->join('product_attributes', 'product_attributes.product_id = products.product_id');
             $builder->whereIn('product_attributes.attribute_id', $attributes);
         }
+
         return $builder;
+    }
+
+    public function getProductsByPriceRange($minPrice, $maxPrice)
+    {
+        return $this->db->table('products')
+            ->where('price >=', $minPrice)
+            ->where('price <=', $maxPrice)
+            ->get()
+            ->getResultArray();
     }
 }

@@ -1,4 +1,9 @@
 <?= $this->extend('base') ?>
+
+<?= $this->section('title') ?>
+Edit
+<?= $this->endSection()?>
+
 <?= $this->section('content') ?>
 
 <div class="container mt-5">

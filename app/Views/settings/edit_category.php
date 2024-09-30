@@ -1,6 +1,9 @@
-<!-- app/Views/settings/edit_category.php -->
-
 <?= $this->extend('base') ?>
+
+<?= $this->section('title') ?>
+Settings
+<?= $this->endSection() ?>
+
 <?= $this->section('content') ?>
 
 <div class="container mt-5">

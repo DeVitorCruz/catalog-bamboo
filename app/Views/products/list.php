@@ -1,5 +1,8 @@
 <?= $this->extend('base') ?>
-<?= $this->section('content') ?>
+
+<?= $this->section('title') ?>
+Product List
+<?= $this->endSection()  ?>
 
 <style>
     .price-range-slider {
@@ -15,6 +18,7 @@
     }
 </style>
 
+<?= $this->section('content') ?>
 
 <div class="container mt-5">
 
@@ -44,7 +48,7 @@
                         </div>
 
                         <!-- Attribute Filter -->
-                        <h6 class="mt-3">Attributes</h6>
+                        <h6 class="mt-3">Attributes <button class="btn btn-sm btn-toggle" onclick="toggleSection('attributeFilter')">Hide</button></h6>
                         <div id="attributeFilter">
                             <?php foreach ($attributes as $attribute): ?>
                                 <div class="form-check">
@@ -66,6 +70,16 @@
                                 <input type="number" name="" id="maxPrice" class="form-control" placeholder="Max">
                             </div>
                         </div>
+
+                        <div class="price-filter">
+                            <h5>Price Range</h5>
+                            <div id="price-range"></div>
+                            <div class="price-values">
+                                <span>Min: $<span id="min-price"></span></span>
+                                <span>Max: $<span id="max-price"></span></span>
+                            </div>
+                        </div>
+
 
                         <!-- Filter Button -->
                         <button class="btn btn-primary mt-3" id="applyFilter">Apply Filters</button>
@@ -107,7 +121,7 @@
             <div class="modal-content">
                 <div class="moal-header">
                     <h5 class="modal-title" id="productDetailsModalLabel">Product Details</h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
                         <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
@@ -124,7 +138,7 @@
                     <ul id="productAttributes"></ul>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                 </div>
             </div>
         </div>
@@ -243,6 +257,97 @@
         });
 
     });
+</script>
+
+<script>
+    <?php
+    $minPrice = min(array_column($products, 'price'));
+    $maxPrice = max(array_column($products, 'price'));
+    ?>
+
+    let minPrice = <?= $minPrice; ?>;
+    let maxPrice = <?= $maxPrice; ?>;
+
+    // Initialize noUiSlider
+
+    const priceSlider = document.getElementById('price-range');
+
+    noUiSlider.create(priceSlider, {
+        start: [minPrice, maxPrice],
+        connect: true,
+        range: {
+            'min': minPrice,
+            'max': maxPrice
+        },
+        step: 1,
+        tooltips: [true, true],
+        format: {
+            to: function(value) {
+                return Math.round(value);
+            },
+            from: function(value) {
+                return Number(value);
+            }
+        }
+    });
+
+    // Display initial min and max prices in the UI
+    let minPriceInput = document.getElementById('min-price');
+    let maxPriceInput = document.getElementById('max-price');
+
+    priceSlider.noUiSlider.on('update', function(values) {
+        minPriceInput.innerHTML = values[0];
+        maxPriceInput.innerHTML = values[1];
+    });
+
+    // On slider change, trigger product filtering
+    priceSlider.noUiSlider.on('change', function(values) {
+        let minPrice = values[0];
+        let maxPrice = values[1];
+        filterProductsByPrice(minPrice, maxPrice);
+    });
+
+    function filterProductsByPrice(minPrice, maxPrice) {
+        $.ajax({
+            url: '<?= base_url('product/filter-slider') ?>',
+            method: 'GET',
+            data: {
+                min_price: minPrice,
+                max_price: maxPrice
+            },
+            success: function(products) {
+                // Assuming the products contains the updated product grid
+                $('#productGrid').html('');
+
+                $.each(products, function(index, product) {
+                    let baseUrl = "<?= base_url(); ?>";
+
+                    $('#productGrid').append(`
+                        <div class="col-md-4 mb-3">
+                            <div class="card">
+                                <img src="${product.image_url}" class="card-img-top" alt="${product.name}">
+                                <div class="card-body">
+                                    <h5 class="card-title">${product.name}</h5>
+                                    <p class="card-text">Price: $${product.price}</p>
+                                    <button type="button" class="btn btn-primary view-detials" data-product-id="${product.product_id}">View <Details></Details></button>
+                                    <td>
+                                        <a href="${baseUrl}product/edit/${product.product_id}" class="btn btn-warning">Edit</a>
+                                        <form action="${baseUrl}product/delete/${product.product_id}" method="post" style="display: inline-block;" onsubmit="return confirm('Are you sure you want to delete this product?');">
+                                            <button type="submit" class="btn btn-danger">Delete</button>
+                                        </form>
+                                    </td>
+                                </div>
+                            </div>
+                        </div>
+                    `);
+                });
+
+            },
+            error: function() {
+                console.error('Error filtering products.');
+            }
+        });
+    }
 </script>
 
 <?= $this->endSection() ?>

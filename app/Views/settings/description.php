@@ -1,6 +1,10 @@
 <?= $this->extend('base') ?>
 <?= $this->section('content') ?>
 
+<?= $this->section('title') ?>
+Settings
+<?= $this->endSection() ?>
+
 <?= session()->getFlashdata('errors') ? implode('<br>', session()->getFlashdata('errors')) : ''; ?>
 
 

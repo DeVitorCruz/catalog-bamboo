@@ -7,6 +7,7 @@ use App\Models\ProductCategoryModel;
 use App\Models\ProductAttributeModel;
 use App\Models\CategoryModel;
 use App\Models\AttributeModel;
+use App\Models\InventoryModel;
 use App\Models\CategoryAttributeModel;
 use CodeIgniter\Controller;
 
@@ -18,7 +19,8 @@ class ProductController extends BaseController
     protected $productAttributeModel;
     protected $categoryModel;
     protected $attributeModel;
-    protected $categoryAttribute;
+    protected $categoryAttributeModel;
+    protected $inventoryModel;
 
     public function __construct()
     {
@@ -27,7 +29,8 @@ class ProductController extends BaseController
         $this->productAttributeModel = new ProductAttributeModel();
         $this->categoryModel = new CategoryModel();
         $this->attributeModel = new AttributeModel();
-        $this->categoryAttribute = new CategoryAttributeModel();
+        $this->categoryAttributeModel = new CategoryAttributeModel();
+        $this->inventoryModel = new InventoryModel();
     }
 
 
@@ -85,7 +88,7 @@ class ProductController extends BaseController
     {
 
         // Get the attributes for the selected category
-        $attributes = $this->categoryAttribute->getAttributesByCategory($category_id);
+        $attributes = $this->categoryAttributeModel->getAttributesByCategory($category_id);
 
         // Return as JSON
         return $this->response->setJSON($attributes);
@@ -128,6 +131,13 @@ class ProductController extends BaseController
             return redirect()->back()->withInput()->with('errors', ['attribute_values' => 'Invalid attribute values.']);
         }
 
+
+        $quantity = $this->request->getPost('stock');
+
+        if (!is_numeric($quantity) || $quantity < 0) {
+            return redirect()->back()->withInput()->with('errors', ['stock' => 'Invalid stock selected.']);
+        }
+
         // Further validation for each attribute
 
         foreach ($attributeValues as $attributedId => $value) {
@@ -141,11 +151,17 @@ class ProductController extends BaseController
         }
 
         // Proceed to insert into products table
+        $this->productModel->createProduct($sanitizedData);
+        $product_id = $this->productModel->insertID(); // Get the last inserted product ID
 
-        $productModel = new ProductModel();
 
-        $productModel->insert($sanitizedData);
-        $product_id = $productModel->insertID(); // Get the last inserted product ID
+        // Insert into the inventory table
+        $product_quantity = [
+            'product_id' => $product_id,
+            'stock_quantity' => $quantity
+        ];
+
+        $this->inventoryModel->createStore($product_quantity);
 
         // Insert into product_categories table
 
@@ -183,12 +199,11 @@ class ProductController extends BaseController
 
         // Fetch all attributes accosciated with the current category 
 
-        $attributes = $this->categoryAttribute->getAttributesByCategory($currentCategory['category_id']);
+        $attributes = $this->categoryAttributeModel->getAttributesByCategory($currentCategory['category_id']);
 
         // Fetch the current attribute values for the product
 
         $currentAttributes = $this->productAttributeModel->where('product_id', $id)->findAll();
-
 
         // Pass data to the view for editing
 
@@ -214,7 +229,6 @@ class ProductController extends BaseController
             'stock' => $this->request->getPost('stock'),
             'image_url' => $this->request->getPost('image_url')
         ];
-
 
         // Get post data and sanitize it
 
@@ -306,6 +320,19 @@ class ProductController extends BaseController
 
         // Return the results as JSON
 
+        return $this->response->setJSON($products);
+    }
+
+    public function filter()
+    {
+        $minPrice = $this->request->getGet('min_price');
+        $maxPrice = $this->request->getGet('max_price');
+
+        // Fetch products within the price range
+
+        $products = $this->productModel->getProductsByPriceRange($minPrice, $maxPrice);
+
+        // Load a partial view to return only the product grid
         return $this->response->setJSON($products);
     }
 }

@@ -23,6 +23,8 @@ $routes->get('product/getAttributes/(:num)', 'ProductController::getAttributesBy
 
 $routes->post('product/filter', 'ProductController::filterProducts');
 
+$routes->get('product/filter-slider', 'ProductController::filter');
+
 $routes->get('product/getProductDetails/(:num)', 'ProductController::getProductDetails/$1');
 
 $routes->get('settings/description', 'SettingsController::description');
@@ -48,3 +50,11 @@ $routes->get('settings/assign_attributes', 'SettingsController::assignAttributes
 $routes->post('settings/saveAttributes', 'SettingsController::saveAttributes');
 
 $routes->get('settings/getAttributesByCategory/(:num)', 'SettingsController::getAttributesByCategory/$1');
+
+$routes->get('auth/login', 'UserController::login');
+
+$routes->post('auth/login', 'UserController::auth');
+
+$routes->get('auth/cadastre', 'UserController::cadastre');
+
+$routes->post('auth/register', 'UserController::register');

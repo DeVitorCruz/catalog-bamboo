@@ -1,6 +1,11 @@
 <!-- app/Views/settings/link_category_attribue.php -->
 
 <?= $this->extend('base') ?>
+
+<?= $this->section('title')?>
+Settings
+<?= $this->endSection()?>
+
 <?= $this->section('content') ?>
 
 

@@ -1,5 +1,9 @@
 <?= $this->extend('base') ?>
 
+<?= $this->section('title') ?>
+Cadastrate
+<?= $this->endSection() ?>
+
 <?= $this->section('content') ?>
 
 <!-- Display Success or Error Messages -->
