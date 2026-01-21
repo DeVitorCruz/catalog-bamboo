@@ -9,9 +9,12 @@ class ProductModel extends Model
 
     protected $table = 'products';
     protected $primaryKey = 'product_id';
-    protected $allowedFields = ['name', 'description', 'price', 'stock', 'image_url'];
+    protected $allowedFields = ['user_id', 'name', 'description', 'price', 'stock', 'image_url'];
 
-    // Optionally, you can define validatio rules
+    protected $createdField = 'created_at';
+    protected $updatedField = 'updated_at';
+    protected $useTimestamps = true;
+
 
     protected $validationRules = [
         'name' => 'required|min_length[3]|max_length[255]',
@@ -22,16 +25,30 @@ class ProductModel extends Model
     ];
 
     // Method to get all products
-    public function getProducts()
+    public function getProducts($user_id = null)
     {
-        return $this->findAll(); // Retrieves all products
+
+        if ($user_id === null) {
+            return $this->findAll();
+        }
+
+        $this->where('user_id', $user_id); // Retrieves all products
+
+        return $this->get()->getResult();
     }
 
     // Method to get a product by ID
 
-    public function getProduct($id)
+    public function getProduct($product_id, $user_id = null)
     {
-        return $this->find($id);
+
+        if ($user_id === null) {
+            return $this->find($product_id);
+        }
+
+        $this->where(['product_id' => $product_id, 'user_id' => $user_id]);
+
+        return $this->get()->getResult();
     }
 
     // Method to create a new product
@@ -41,15 +58,24 @@ class ProductModel extends Model
     }
 
     // Method to updata an existing product
-    public function updateProduct($id, $data)
+    public function updateProduct($product_id, $data, $user_id = null)
     {
-        return $this->update($id, $data);
+
+        if ($user_id === null) {
+            return $this->update($product_id, $data);
+        }
+
+        return $this->where('user_id', $user_id)->update($product_id, $data);
     }
 
     // Method to delete a product
-    public function deleteProduct($id)
+    public function deleteProduct($product_id, $user_id = null)
     {
-        return $this->delete($id);
+        if ($user_id === null) {
+            return $this->delete($product_id);
+        }
+
+        return $this->where('user_id', $user_id)->delete($product_id);
     }
 
     public function getAttributes($categoryId)

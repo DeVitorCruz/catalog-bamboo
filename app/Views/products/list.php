@@ -4,6 +4,8 @@
 Product List
 <?= $this->endSection()  ?>
 
+<?= $this->section('content') ?>
+
 <style>
     .price-range-slider {
         padding: 10px;
@@ -16,11 +18,88 @@ Product List
     .price-range-slider span {
         font-weight: bold;
     }
+
+    .categories-section {
+        white-space: nowrap;
+        overflow-x: auto;
+        padding-bottom: 10px;
+    }
+
+    .overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        z-index: 1040;
+        display: none;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+
+    /* When overlay is active */
+    .overlay-active {
+        display: block;
+        opacity: 1;
+    }
+
+    /* Sidebar Styling */
+
+    @media only screen and (max-width: 1023px) {
+
+        #sidebar .card {
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 1050;
+            display: none;
+            border-radius: 0 !important;
+        }
+
+        #sidebar .card-header span {
+            line-height: 1.6;
+        }
+
+        #sidebar .card.show {
+            display: block;
+        }
+
+        #sidebar .card-body {
+            height: 87vh;
+            width: 290px;
+            overflow-y: auto;
+        }
+
+    }
 </style>
 
-<?= $this->section('content') ?>
-
 <div class="container mt-5">
+
+    <div class="row">
+
+        <!-- Header Title Section -->
+
+        <div class="col-12 text-center bg-dark text-white">
+            <span>Product Listing</span>
+        </div>
+
+        <!-- Button Section -->
+
+        <div id="filter-section" class="col-12 mt-3">
+            <div class="d-flex justify-content-between">
+                <button class="btn btn-outline-primary" id="filterBtn" onclick="showHiddenSideBar();">Filter</button>
+                <button class="btn btn-outline-secondary">Popular</button>
+            </div>
+        </div>
+
+        <div class="col-12 mt-3 categories-section">
+            <?php foreach ($categories as $category): ?>
+                <button class="btn btn-outline-secondary"><span><?= $category['name']; ?></span></button>
+            <?php endforeach; ?>
+        </div>
+
+    </div>
 
     <div class="d-flex justify-content-between align-items-center">
         <h2 class="text-center">Product Listing</h2>
@@ -29,11 +108,13 @@ Product List
 
     <div class="container-fuild">
         <div class="row">
+
             <!-- Sidebar for Filter -->
-            <div class="col-md-3">
+
+            <div id="sidebar" class="col-md-3">
                 <div class="card">
                     <div class="card-header">
-                        <h5>Filter Products</h5>
+                        <h5 class="d-flex justify-content-between"><span>Filter Products</span> <button class="btn btn-danger btn-toggle" id="close-sidebar" onclick="closeHiddenSideBar();"><i class="fas fa-times"></i></button></h5>
                     </div>
                     <div class="card-body">
                         <!-- Category Filter -->
@@ -79,13 +160,16 @@ Product List
                                 <span>Max: $<span id="max-price"></span></span>
                             </div>
                         </div>
-
-
-                        <!-- Filter Button -->
-                        <button class="btn btn-primary mt-3" id="applyFilter">Apply Filters</button>
+                    </div>
+                    <!-- Filter Button -->
+                    <div class="card-footer d-flex justify-content-center">
+                        <button class="btn btn-primary" id="applyFilter">Apply Filters</button>
                     </div>
                 </div>
             </div>
+
+            <!-- Product Grid -->
+
             <div class="col-md-9">
                 <div class="row" id="productGrid">
                     <?php if (isset($products) && count($products) > 0): ?>
@@ -112,7 +196,12 @@ Product List
                     <?php endif; ?>
                 </div>
             </div>
+
         </div>
+
+        <!-- Grey overlay div (initially hidden) -->
+        <div id="overlay" class="overlay"></div>
+
     </div>
 
     <!-- Modal -->
@@ -147,6 +236,8 @@ Product List
     <a type="button" class="btn btn-secondary" href="<?= base_url('/') ?>">Cancel</a>
 
 </div>
+
+<!-- Original Version -->
 
 <script>
     function toggleSection(sectionId) {
@@ -199,6 +290,55 @@ Product List
     });
 </script>
 
+
+<script>
+    function showHiddenSideBar() {
+        const sidebarCard = $('#sidebar .card');
+
+        if (sidebarCard.hasClass('show') !== true) {
+            sidebarCard.addClass('show');
+
+            $('#overlay').addClass('overlay-active');
+        }
+
+        $('#overlay').on('click', function() {
+            closeHiddenSideBar(); // Hide sidebar
+        });
+    }
+
+    function closeHiddenSideBar() {
+        const sidebar = $('#sidebar .card');
+
+        $('#overlay').removeClass('overlay-active');
+
+        if (sidebar.hasClass('show') !== false) {
+            sidebar.removeClass('show');
+        }
+    }
+
+    function adjustColumns() {
+        if ($(window).width() < 1007) {
+
+            $('#filter-section').show();
+            $('#close-sidebar').show();
+
+            $('#productGrid').parent().removeClass('col-md-9').addClass('col-md-12');
+        } else {
+
+            $('#filter-section').hide();
+            $('#close-sidebar').hide();
+
+            $('#productGrid').parent().removeClass('col-md-12').addClass('col-md-9');
+        }
+    }
+
+    adjustColumns();
+
+    $(window).resize(function() {
+        adjustColumns();
+    });
+</script>
+
 <script>
     $('#applyFilter').on('click', function() {
         // Get selected categories
@@ -233,6 +373,9 @@ Product List
 
                 $.each(products, function(index, product) {
                     let baseUrl = "<?= base_url(); ?>";
+
+                    closeHiddenSideBar();
+
 
                     $('#productGrid').append(`
                         <div class="col-md-4 mb-3">

@@ -30,7 +30,7 @@ Cadastrate
         <h2 class="text-center">Add New Product</h2>
         <a href="<?= base_url('/') ?>" class="btn btn-primary">Back to Home</a>
     </div>
-    <form action="<?= base_url('/product/store') ?>" method="post">
+    <form action="<?= base_url('/product/create') ?>" method="post">
         <?= csrf_field() ?> <!-- CSRF Token -->
 
         <div class="mb-3">

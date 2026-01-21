@@ -9,6 +9,7 @@ use App\Models\CategoryModel;
 use App\Models\AttributeModel;
 use App\Models\InventoryModel;
 use App\Models\CategoryAttributeModel;
+use App\Models\AnnouncementModel;
 use CodeIgniter\Controller;
 
 class ProductController extends BaseController
@@ -21,6 +22,7 @@ class ProductController extends BaseController
     protected $attributeModel;
     protected $categoryAttributeModel;
     protected $inventoryModel;
+    protected $announcementModel;
 
     public function __construct()
     {
@@ -31,6 +33,7 @@ class ProductController extends BaseController
         $this->attributeModel = new AttributeModel();
         $this->categoryAttributeModel = new CategoryAttributeModel();
         $this->inventoryModel = new InventoryModel();
+        $this->announcementModel = new AnnouncementModel();
     }
 
 
@@ -57,15 +60,36 @@ class ProductController extends BaseController
         ];
     }
 
+    /**
+     * Load the index page with all necessery data
+     * 
+     * @return array
+     */
+    public function index()
+    {
+        $products = $this->productModel->getProducts();
+        $announces = $this->announcementModel->getActiveAnnouncement();
+
+        $data = [
+            'products' => $products,
+            'announces' => $announces
+        ];
+
+        return view('index', $data);
+    }
+
     public function list()
     {
 
+        $role = session()->get('role');
+        $user_id = session()->get('user_id');
+
         $categories = $this->categoryModel->getCategories();
         $attributes = $this->attributeModel->getAttributes();
-        $product = $this->productModel->getProducts();
+        $products = $this->productModel->getProducts($role == 'admin' ? null : $user_id);
 
         $data = [
-            'products' => $product,
+            'products' => $products,
             'categories' => $categories,
             'attributes' => $attributes
         ];
@@ -73,14 +97,6 @@ class ProductController extends BaseController
         // Fetch all products
 
         return view('products/list', $data); // Load the view to display
-    }
-
-    public function create()
-    {
-
-        $data['categories'] = $this->categoryModel->findAll();
-
-        return view('products/create', $data); // Load the product form view
     }
 
     // Load attributes dynamically base on category
@@ -95,95 +111,110 @@ class ProductController extends BaseController
     }
 
     // Store method for creating a new product
-    public function store()
+    public function create()
     {
 
-        // Get and sanitize product data
-        $product = [
-            'name' => $this->request->getPost('name'),
-            'description' => $this->request->getPost('description'),
-            'price' => $this->request->getPost('price'),
-            'stock' => $this->request->getPost('stock'),
-            'image_url' => $this->request->getPost('image_url')
-        ];
+        if ($this->request->getMethod() === 'POST') {
 
-        // Validate product data
+            $user_id = session()->get('user_id');
 
-        if (!$this->validate($this->validationRules)) {
-            return redirect()->back()->withInput('errors', $this->validator->getErrors());
-        }
+            // Get and sanitize product data
+            $product = [
+                'name' => $this->request->getPost('name'),
+                'description' => $this->request->getPost('description'),
+                'price' => $this->request->getPost('price'),
+                'stock' => $this->request->getPost('stock'),
+                'image_url' => $this->request->getPost('image_url')
+            ];
 
-        $sanitizedData = $this->sanitizeInput($product);
+            // Validate product data
 
-        // Sanitize and validate category_id
-
-        $category_id = $this->request->getPost('category_id');
-
-        if (!is_numeric($category_id) || $category_id <= 0) {
-            return redirect()->back()->withInput()->with('errors', ['category_id' => 'Invalid category selected.']);
-        }
-
-        // Sanitize and validate attribute values 
-
-        $attributeValues = $this->request->getPost('attribute_values');
-
-        if (!is_array($attributeValues)) {
-            return redirect()->back()->withInput()->with('errors', ['attribute_values' => 'Invalid attribute values.']);
-        }
-
-
-        $quantity = $this->request->getPost('stock');
-
-        if (!is_numeric($quantity) || $quantity < 0) {
-            return redirect()->back()->withInput()->with('errors', ['stock' => 'Invalid stock selected.']);
-        }
-
-        // Further validation for each attribute
-
-        foreach ($attributeValues as $attributedId => $value) {
-            if (!isset($attributedId) || !is_numeric($attributedId)) {
-                return redirect()->back()->withInput()->with('errors', ['attribute_id' => 'Invalid attribute ID.']);
+            if (!$this->validate($this->validationRules)) {
+                return redirect()->back()->withInput('errors', $this->validator->getErrors());
             }
 
-            if (!isset($value) || empty($value)) {
-                return redirect()->back()->withInput()->with('error', ['value' => 'Attribute value is required.']);
+            $sanitizedData = $this->sanitizeInput($product);
+
+            $sanitizedData['user_id'] = $user_id;
+
+            // Sanitize and validate category_id
+
+            $category_id = $this->request->getPost('category_id');
+
+            if (!is_numeric($category_id) || $category_id <= 0) {
+                return redirect()->back()->withInput()->with('errors', ['category_id' => 'Invalid category selected.']);
             }
+
+            // Sanitize and validate attribute values 
+
+            $attributeValues = $this->request->getPost('attribute_values');
+
+            if (!is_array($attributeValues)) {
+                return redirect()->back()->withInput()->with('errors', ['attribute_values' => 'Invalid attribute values.']);
+            }
+
+
+            $quantity = $this->request->getPost('stock');
+
+            if (!is_numeric($quantity) || $quantity < 0) {
+                return redirect()->back()->withInput()->with('errors', ['stock' => 'Invalid stock selected.']);
+            }
+
+            // Further validation for each attribute
+
+            foreach ($attributeValues as $attributedId => $value) {
+                if (!isset($attributedId) || !is_numeric($attributedId)) {
+                    return redirect()->back()->withInput()->with('errors', ['attribute_id' => 'Invalid attribute ID.']);
+                }
+
+                if (!isset($value) || empty($value)) {
+                    return redirect()->back()->withInput()->with('error', ['value' => 'Attribute value is required.']);
+                }
+            }
+
+            // Proceed to insert into products table
+            $this->productModel->createProduct($sanitizedData);
+            $product_id = $this->productModel->insertID(); // Get the last inserted product ID
+
+
+            // Insert into the inventory table
+            $product_quantity = [
+                'product_id' => $product_id,
+                'stock_quantity' => $quantity
+            ];
+
+            $this->inventoryModel->createStore($product_quantity);
+
+            // Insert into product_categories table
+
+            $this->productCategoryModel->addProductCategory($product_id, $category_id);
+
+            // Insert into product_attributes table
+
+            foreach ($attributeValues as $attributedId => $value) {
+                $this->productAttributeModel->addProductAttribute($product_id, $attributedId, $value);
+            }
+
+            // Redirect with success message
+
+            return redirect()->to('/product/create')->with('message', 'Product added successfully.');
         }
 
-        // Proceed to insert into products table
-        $this->productModel->createProduct($sanitizedData);
-        $product_id = $this->productModel->insertID(); // Get the last inserted product ID
+        $data['categories'] = $this->categoryModel->findAll();
 
+        return view('products/create', $data); // Load the product form view
 
-        // Insert into the inventory table
-        $product_quantity = [
-            'product_id' => $product_id,
-            'stock_quantity' => $quantity
-        ];
-
-        $this->inventoryModel->createStore($product_quantity);
-
-        // Insert into product_categories table
-
-        $this->productCategoryModel->addProductCategory($product_id, $category_id);
-
-        // Insert into product_attributes table
-
-        foreach ($attributeValues as $attributedId => $value) {
-            $this->productAttributeModel->addProductAttribute($product_id, $attributedId, $value);
-        }
-
-        // Redirect with success message
-
-        return redirect()->to('/product/create')->with('message', 'Product added successfully.');
     }
 
-    public function edit($id)
+    public function edit($product_id)
     {
+
+        $user_id = session()->get('user_id');
+        $role = session()->get('role');
 
         // Fetch the product details
 
-        $product = $this->productModel->getProduct($id);
+        $product = $this->productModel->getProduct($product_id, $role == 'admin' ? null : $user_id);
 
         if (!$product) {
             return redirect()->back()->with('error', 'Product no found.');
@@ -195,7 +226,7 @@ class ProductController extends BaseController
 
         // Fetch the current category of the product
 
-        $currentCategory = $this->productCategoryModel->where('product_id', $id)->first();
+        $currentCategory = $this->productCategoryModel->where('product_id', $product_id)->first();
 
         // Fetch all attributes accosciated with the current category 
 
@@ -203,7 +234,7 @@ class ProductController extends BaseController
 
         // Fetch the current attribute values for the product
 
-        $currentAttributes = $this->productAttributeModel->where('product_id', $id)->findAll();
+        $currentAttributes = $this->productAttributeModel->where('product_id', $product_id)->findAll();
 
         // Pass data to the view for editing
 
@@ -219,10 +250,15 @@ class ProductController extends BaseController
     }
 
     // Update method for editing an existing product
-    public function update($id)
+    public function update($product_id)
     {
 
+        $user_id = session()->get('user_id');
+
+        $role = session()->get('role');
+
         $data = [
+            'user_id' => $user_id,
             'name' => $this->request->getPost('name'),
             'description' => $this->request->getPost('description'),
             'price' => $this->request->getPost('price'),
@@ -239,13 +275,13 @@ class ProductController extends BaseController
         }
 
         // update product information
-        $this->productModel->updateProduct($id, $sanitizedData);
+        $this->productModel->updateProduct($product_id, $sanitizedData, $role == 'admin' ? null : $user_id);
 
         // Update category association
         $category_id = $this->request->getPost('category_id');
 
         if ($category_id) {
-            $this->productCategoryModel->updateOrInsertCategory($id, $category_id);
+            $this->productCategoryModel->updateOrInsertCategory($product_id, $category_id);
         }
 
         // Update attribute values
@@ -253,7 +289,7 @@ class ProductController extends BaseController
         $attributeValues = $this->request->getPost('attribute_values');
 
         if (is_array($attributeValues)) {
-            $this->productAttributeModel->updateAttributes($id, $attributeValues);
+            $this->productAttributeModel->updateAttributes($product_id, $attributeValues);
         }
 
         // Redirect with success message
@@ -261,22 +297,25 @@ class ProductController extends BaseController
         return redirect()->to('/product')->with('message', 'Product updated successfully.');
     }
 
-    public function delete($id)
+    public function delete($product_id)
     {
         // Start a transaction for safe deletion
         $db = \Config\Database::connect();
         $db->transBegin();
 
+        $user_id = session()->get('user_id');
+        $role = session()->get('role');
+
         try {
 
             // Step 1: Delete from product_attributes
-            $this->productAttributeModel->where('product_id', $id)->delete();
+            $this->productAttributeModel->where('product_id', $product_id)->delete();
 
             // Step 2: Delete from product_categories
-            $this->productCategoryModel->where('product_id', $id)->delete();
+            $this->productCategoryModel->where('product_id', $product_id)->delete();
 
             // Step 3: Delete the product itself
-            $this->productModel->deleteProduct($id);
+            $this->productModel->deleteProduct($product_id, $role == 'admin' ? null : $user_id);
 
             if ($db->transStatus() === false) {
                 $db->transRollback();
