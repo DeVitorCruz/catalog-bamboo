@@ -32,9 +32,14 @@ class UserModel extends model
         return $this->findAll();
     }
 
-    public function updatePassword($userId, $newPassword)
+    public function getUser($user_id)
+    {
+        return $this->find($user_id);
+    }
+
+    public function updatePassword($user_id, $newPassword)
     {
         $hashedPassword = password_hash($newPassword, PASSWORD_DEFAULT);
-        return $this->update($userId, ['password', $hashedPassword]);
+        return $this->update($user_id, ['password' => $hashedPassword]);
     }
 }
